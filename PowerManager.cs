@@ -67,14 +67,39 @@ namespace ExportPower
         {
             logger.Log($"Created PowerManager [{GetType().Assembly.FullName}]");
             Settings = Settings.Load();
+            Settings.OnSettingsChange += SettingsChanged;
             _buildingManager.EventBuildingCreated += HandleBuildingCreated;
             _buildingManager.EventBuildingReleased += HandleBuildingReleased;
             Initialize();
         }
 
+        private void SettingsChanged(Settings settings)
+        {
+            if (_powerInfoExtended != null)
+            {
+                var info = Info;
+                _powerInfoExtended.SetPowerInfo(
+                    info.CostPerUnit * 10,
+                    info.PricePerUnit * 10,
+                    info.ExcessCapacity / 1000,
+                    info.WeeklyIncome / 100.0
+                );
+            }
+        }
+
         private void Initialize()
         {
             LoadPowerPlants();
+            if (_powerInfoExtended != null)
+            {
+                var info = Info;
+                _powerInfoExtended.SetPowerInfo(
+                    info.CostPerUnit * 10,
+                    info.PricePerUnit * 10,
+                    info.ExcessCapacity / 1000,
+                    info.WeeklyIncome / 100.0
+                );
+            }
             Inspect();
 
         }
@@ -223,8 +248,8 @@ namespace ExportPower
                 var info = Info;
                 if (info.HasExcessCapacity)
                 {
-                    var weeklyIncome = (int) (info.ExcessCapacity * info.PricePerUnit);
-                    var periodIncome = (int) (weeklyIncome * fraction);
+                    
+                    var periodIncome = (int) (info.WeeklyIncome * fraction);
                     if (periodIncome > 0)
                     {
                         if (_powerInfoExtended != null)
@@ -233,7 +258,7 @@ namespace ExportPower
                                 info.CostPerUnit * 10,
                                 info.PricePerUnit * 10,
                                 info.ExcessCapacity / 1000,
-                                weeklyIncome / 100.0
+                                info.WeeklyIncome / 100.0
                             );
                         }
 
@@ -261,7 +286,7 @@ namespace ExportPower
                         }
 
                         logger.Log($"Cost: ${info.CostPerUnit}/u, Market Price: ${info.PricePerUnit}/u, " +
-                                   $"Income: ${weeklyIncome / 100.0} weekly / " +
+                                   $"Income: ${info.WeeklyIncome / 100.0} weekly / " +
                                    $"${income / 100.0} accumulated / " +
                                    $"${periodIncome / 100.0} period, " +
                                    $"period hours: {elapsed.TotalHours}," +
@@ -308,6 +333,8 @@ namespace ExportPower
                     return CostPerUnit * priceFactor;
                 }
             }
+            
+            public int WeeklyIncome =>  (int) (ExcessCapacity * PricePerUnit);
         }
     }
 }

@@ -6,6 +6,10 @@ namespace ExportPower
     public class Settings
     {
 
+        public delegate void SettingsChanged(Settings settings);
+
+        public event SettingsChanged OnSettingsChange;
+        
         public struct Data
         {
             public float PremiumFactor;
@@ -98,6 +102,9 @@ namespace ExportPower
                 if (writer != null)
                     writer.Close();
             }
+
+            OnSettingsChange?.Invoke(this);
+            
             return this;
         }
     }
